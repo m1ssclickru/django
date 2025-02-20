@@ -127,3 +127,259 @@ python manage.py migrate
    
 
 Теперь у вас есть базовая реализация удаления исследователя и редактирования его информации в Django. Вы можете адаптировать этот код под свои нужды и добавлять дополнительные проверки и функционал по мере необходимости.
+
+
+Конечно! Давайте добавим методы для создания поездки, получения списка доступных туров, записи на тур и поиска по животным и исследователям в Django.
+
+▎Шаг 1: Создание модели для туров
+
+Сначала создадим модель для хранения информации о турах в models.py вашего приложения:
+
+from django.db import models
+
+class Tour(models.Model):
+    tour_number = models.CharField(max_length=10, unique=True)
+    launch_date = models.DateField()
+    seats_available = models.IntegerField()
+
+    def __str__(self):
+        return f"Tour {self.tour_number}"
+
+
+▎Шаг 2: Создание представлений
+
+Теперь создадим представления для каждого из методов в views.py:
+
+from django.http import JsonResponse, HttpResponseNotFound
+from django.views import View
+from .models import Tour
+import json
+
+class CreateTourView(View):
+    def post(self, request):
+        data = json.loads(request.body)
+        tour_number = data.get('tour_number')
+        launch_date = data.get('launch_date')
+        seats_available = data.get('seats_available')
+
+        # Создание нового тура
+        tour = Tour(tour_number=tour_number, launch_date=launch_date, seats_available=seats_available)
+        tour.save()
+
+        return JsonResponse({
+            "data": {
+                "code": 201,
+                "message": "Тур зарегистирован"
+            }
+        }, status=201)
+
+class ListToursView(View):
+    def get(self, request):
+        tours = Tour.objects.all().values('tour_number', 'launch_date', 'seats_available')
+        return JsonResponse({
+            "data": list(tours)
+        }, status=200)
+
+class BookTourView(View):
+    def post(self, request):
+        data = json.loads(request.body)
+        flight_number = data.get('flight_number')
+
+        # Логика записи на тур (например, проверка наличия мест)
+        # Здесь можно добавить логику для бронирования тура
+
+        return JsonResponse({
+            "data": {
+                "code": 201,
+                "message": "Тур забронирован"
+            }
+        }, status=201)
+
+class SearchAnimalsAndExplorersView(View):
+    def get(self, request):
+        query = request.GET.get('query', '')
+
+        # Пример поиска по животным (замените на вашу логику поиска)
+        if query.lower() == 'слон':
+            return JsonResponse({
+                "data": {
+                    "name": "Африканский слон",
+                    "scientific_name": "Loxodonta africana",
+                    "population_estimate": 415000,
+                    "conservation_status": "Уязвимый",
+                    "habitat": {
+                        "region": "Саванны и леса Африки",
+                        "countries": [
+                            "Ботсвана",
+                            "Кения",
+                            "Танзания",
+                            "Зимбабве"
+                        ],
+                        "coordinates": {
+                            "latitude": "-6.3690000",
+                            "longitude": "34.8888000"
+                        }
+                    },
+                    "characteristics": {
+                        "diet": "Травоядное",
+                        "lifespan": "60-70 лет",
+                        "weight": {
+                            "min_kg": 4000,
+                            "max_kg": 7000
+                        },
+                        "height": {
+                            "min_meters": 2.5,
+                            "max_meters": 4
+                        }
+                    },
+                    "behavior": {
+                        "social_structure": "Стада",
+                        "communication": "Инфразвук, вибрации",
+                        "migration_patterns": "Сезонные перемещения"
+                    },
+                    "threats": [
+                        {
+                            "name": "Браконьерство",
+                            "description": "Охота за слоновой костью."
+                        },
+                        {
+                            "name": "Потеря среды обитания",
+
+                                "description": "Расширение сельского хозяйства и урбанизация."
+                        }
+                    ],
+                    "conservation_efforts": [
+                        {
+                            "organization": "Всемирный фонд дикой природы (WWF)",
+                            "actions": [
+                                "Борьба с браконьерством",
+                                "Создание заповедников",
+                                "Образовательные программы"
+                            ]
+                        }
+                    ]
+                }
+            }, status=200)
+
+        return JsonResponse({"data": {}}, status=404)
+
+
+▎Шаг 3: Настройка маршрутов
+
+Теперь добавим маршруты для этих представлений в файл urls.py вашего приложения:
+
+from django.urls import path
+from .views import CreateTourView, ListToursView, BookTourView, SearchAnimalsAndExplorersView
+
+urlpatterns = [
+    path('tour/', CreateTourView.as_view(), name='create_tour'),
+    path('tours/', ListToursView.as_view(), name='list_tours'),
+    path('book-tour/', BookTourView.as_view(), name='book_tour'),
+    path('search/', SearchAnimalsAndExplorersView.as_view(), name='search_animals_explorers'),
+]
+
+
+▎Шаг 4: Настройка проекта
+
+Не забудьте добавить ваше приложение в INSTALLED_APPS в файле settings.py, если вы этого еще не сделали:
+
+INSTALLED_APPS = [
+    ...
+    'your_app_name',
+]
+
+
+▎Шаг 5: Миграции
+
+Не забудьте выполнить миграции для создания таблиц в базе данных:
+
+python manage.py makemigrations
+python manage.py migrate
+
+
+▎Примеры запросов
+
+1. Создание поездки:
+
+      POST /tour/
+   Content-Type: application/json
+
+   {
+       "tour_number": "103",
+       "launch_date": "2025-05-15",
+       "seats_available": 6
+   }
+   
+
+   Ответ:
+
+      {
+       "data": {
+           "code": 201,
+           "message": "Тур зарегистирован"
+       }
+   }
+   
+
+2. Получение списка доступных туров:
+
+      GET /tours/
+   Content-Type: application/json
+   
+
+   Ответ:
+
+      {
+       "data": [
+           {
+               "tour_number": "103",
+               "launch_date": "2025-05-15",
+               "seats_available": 6
+           },
+           {
+               "tour_number": "104",
+               "launch_date": "2025-06-15",
+               "seats_available": 8
+           }
+       ]
+   }
+   
+
+3. Запись на тур:
+
+      POST /book-tour/
+   Content-Type: application/json
+
+   {
+       "flight_number": "101"
+   }
+   
+
+   Ответ:
+
+      {
+       "data": {
+           "code": 201,
+           "message": "Тур забронирован"
+       }
+   }
+   
+
+4. Поиск по животным и исследователям:
+
+      GET /search?query=слон
+   Content-Type: application/json
+   
+
+   Ответ:
+
+      {
+       "data": {
+           ...
+           // Данные о слоне как указано выше
+           ...
+       }
+   }
+   
+
+Теперь у вас есть полная реализация методов для создания поездки, получения списка доступных туров, записи на тур и поиска по животным и исследователям в Django. Вы можете адаптировать этот код под свои нужды и добавлять дополнительные проверки и функционал по мере необходимости.                  
